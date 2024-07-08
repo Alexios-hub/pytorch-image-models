@@ -1308,33 +1308,56 @@ class FastVit(nn.Module):
             self.reset_classifier(0, '')
         return take_indices
 
+    # def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+    #     # input embedding
+    #     x = self.stem(x)
+    #     outs = []
+    #     for idx, block in enumerate(self.stages):
+    #         x = block(x)
+    #         if self.fork_feat:
+    #             if idx in self.out_indices:
+    #                 norm_layer = getattr(self, f"norm{idx}")
+    #                 x_out = norm_layer(x)
+    #                 outs.append(x_out)
+    #     if self.fork_feat:
+    #         # output the features of four stages for dense prediction
+    #         return outs
+    #     x = self.final_conv(x)
+    #     return x
+
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
         # input embedding
         x = self.stem(x)
         outs = []
         for idx, block in enumerate(self.stages):
             x = block(x)
-            if self.fork_feat:
-                if idx in self.out_indices:
-                    norm_layer = getattr(self, f"norm{idx}")
-                    x_out = norm_layer(x)
-                    outs.append(x_out)
-        if self.fork_feat:
-            # output the features of four stages for dense prediction
-            return outs
+            # if self.fork_feat:
+            if idx in [0]:
+                # norm_layer = getattr(self, f"norm{idx}")
+                # x_out = norm_layer(x)
+                outs.append(x)
+        # if self.fork_feat:
+        #     # output the features of four stages for dense prediction
+        #     return outs
         x = self.final_conv(x)
-        return x
-
+        return x, outs
+    
     def forward_head(self, x: torch.Tensor, pre_logits: bool = False):
         return self.head(x, pre_logits=True) if pre_logits else self.head(x)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.forward_features(x)
-        if self.fork_feat:
-            return x
-        x = self.forward_head(x)
-        return x
+    # def forward(self, x: torch.Tensor) -> torch.Tensor:
+    #     x = self.forward_features(x)
+    #     if self.fork_feat:
+    #         return x
+    #     x = self.forward_head(x)
+    #     return x
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x, outs = self.forward_features(x)
+
+        x = self.forward_head(x)
+        return x, outs
+    
 
 def _cfg(url="", **kwargs):
     return {
